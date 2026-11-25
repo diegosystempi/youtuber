@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang='es-ES'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover'>
+<meta name='robots' content='noindex,nofollow'>
+<title>Admin · Laura Organiza</title>
+<link href='https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap' rel='stylesheet'>
+<style>
+:root{--bg1:#F5F3FF;--bg2:#FFFFFF;--card:#FFFFFF;--border:#DDD6FE;--hover:#EDE9FE;--text:#1C1917;--muted:#6B7280;--accent:#7C3AED;--err:#B91C1C;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg1:#1B1636;--bg2:#0E0B1B;--card:#1F1A38;--border:#3B3170;--hover:#2B2354;--text:#F5F3FF;--muted:#A8A3C4;--accent:#A78BFA;--err:#F87171;color-scheme:dark}}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;padding:max(24px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--text);background:var(--bg2) linear-gradient(180deg,var(--bg1),var(--bg2)) no-repeat fixed}
+main{max-width:480px;margin:0 auto}
+h1{margin:0 0 6px;font-size:1.3rem;font-weight:800;letter-spacing:-.02em}
+.msg{margin:0 0 16px;font-size:.85rem;color:var(--muted)}
+.msg.err{color:var(--err)}
+.card,.row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;padding:12px;border-radius:20px;background:var(--card);border:1.5px solid var(--border)}
+.card{grid-template-columns:1fr}
+.row.off{opacity:.65}
+input:not([type=checkbox]){width:100%;min-width:0;min-height:44px;padding:8px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg2);color:var(--text);font:inherit;font-size:.9rem}
+input:focus-visible,.ab:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.full,.acts{grid-column:1/-1}
+.acts{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.chk{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-right:10px;font-size:.85rem}
+.chk input{width:20px;height:20px;accent-color:var(--accent)}
+.btns,.foot{display:flex;flex-wrap:wrap;gap:6px}
+.ab{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font:inherit;font-size:.88rem;font-weight:600;text-decoration:none;cursor:pointer}
+.ab:hover{background:var(--hover)}
+.ab:disabled{opacity:.45;cursor:default}
+.ab.pri{background:#7C3AED;border-color:#7C3AED;color:#fff}
+.ab.pri:hover{background:#6D28D9}
+</style>
+</head>
+<body>
+<main id='app'><p class='msg'>Cargando…</p></main>
+<datalist id='icons'><option value='youtube'><option value='tiktok'><option value='instagram'><option value='linkedin'><option value='tienda'><option value='trabajo'><option value='ordenador'><option value='libro'></datalist>
+<script src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'></script>
+<script>
+(function(){
+var U='https://zjamrtsacfglcwmtjzuc.supabase.co',K='sb_publishable_essa_o9nt_dObmDojYIOxg_PhuC5nQM';
+var app=document.getElementById('app');
+function mk(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+if(!window.supabase){app.textContent='No se pudo cargar el panel. Recarga la página.';return}
+var sb=supabase.createClient(U,K);
+function ab(t,label,fn,cls,dis){var b=mk('button','ab'+(cls?' '+cls:''),t);b.type='button';b.setAttribute('aria-label',label);b.disabled=!!dis;if(fn)b.onclick=fn;return b}
+function head(sub,err){app.textContent='';app.appendChild(mk('h1',null,'Panel de enlaces'));var p=mk('p','msg'+(err?' err':''),sub);app.appendChild(p);return p}
+function out(){sb.auth.signOut().then(init)}
+function isHttps(u){return String(u).slice(0,8).toLowerCase()==='https://'}
+
+async function init(){var r=await sb.auth.getSession();if(r.data.session)panel();else login()}
+
+function login(){
+  head('Acceso solo para Laura.');
+  var f=mk('div','card'),em=mk('input'),pw=mk('input'),st=mk('p','msg'),go;
+  em.type='email';em.placeholder='Correo electrónico';em.autocomplete='username';em.setAttribute('aria-label','Correo electrónico');
+  pw.type='password';pw.placeholder='Contraseña';pw.autocomplete='current-password';pw.setAttribute('aria-label','Contraseña');
+  go=ab('Entrar','Entrar',async function(){
+    go.disabled=true;st.className='msg';st.textContent='Entrando…';
+    var r=await sb.auth.signInWithPassword({email:em.value.trim(),password:pw.value});
+    if(r.error){st.className='msg err';st.textContent='Correo o contraseña incorrectos.';go.disabled=false}else init();
+  },'pri');
+  pw.onkeydown=function(e){if(e.key==='Enter')go.click()};
+  f.appendChild(em);f.appendChild(pw);f.appendChild(go);app.appendChild(f);app.appendChild(st);
+}
+
+async function panel(saved){
+  var p=head('Cargando…');
+  var a=await sb.from('laura_admins').select('user_id').maybeSingle();
+  if(!a.data){p.className='msg err';p.textContent='Esta cuenta no tiene permiso para editar.';app.appendChild(ab('Cerrar sesión','Cerrar sesión',out));return}
+  var q=await sb.from('laura_links').select('*').order('orden');
+  if(q.error){p.className='msg err';p.textContent='No se pudieron cargar los enlaces.';return}
+  var orig=q.data,draft=orig.map(function(l){return Object.assign({},l)});
+  var list=mk('div'),st=mk('p','msg'),foot=mk('div','foot'),save;
+  p.textContent=saved?'Guardado ✓ La página pública ya muestra los cambios.':'Edita, reordena y oculta enlaces. Los cambios se ven en la página al guardar.';
+  function inp(l,k,ph,full){var i=mk('input',full?'full':'');i.type='text';i.value=l[k]||'';i.placeholder=ph;i.setAttribute('aria-label',ph);if(k==='icono')i.setAttribute('list','icons');i.oninput=function(){l[k]=i.value};return i}
+  function chk(l,k,t){var lb=mk('label','chk'),c=document.createElement('input');c.type='checkbox';c.checked=!!l[k];c.onchange=function(){l[k]=c.checked;if(k==='visible')draw()};lb.appendChild(c);lb.appendChild(document.createTextNode(t));return lb}
+  function mv(i,d){var t=draft[i];draft[i]=draft[i+d];draft[i+d]=t;draw()}
+  function draw(){list.textContent='';draft.forEach(function(l,i){
+    var r=mk('div','row'+(l.visible?'':' off')),a=mk('div','acts'),c=mk('div'),b=mk('div','btns'),d;
+    r.appendChild(inp(l,'titulo','Título',1));r.appendChild(inp(l,'url','URL (https://…)',1));r.appendChild(inp(l,'icono','Icono: youtube, tienda… o emoji'));r.appendChild(inp(l,'badge','Etiqueta (opcional)'));
+    c.appendChild(chk(l,'destacado','Destacado'));c.appendChild(chk(l,'visible','Visible'));
+    b.appendChild(ab('↑','Subir',function(){mv(i,-1)},'',i===0));b.appendChild(ab('↓','Bajar',function(){mv(i,1)},'',i===draft.length-1));
+    d=ab('Eliminar','Eliminar enlace');d.onclick=function(){if(d.dataset.s){draft.splice(i,1);draw()}else{d.dataset.s='1';d.textContent='¿Seguro?'}};b.appendChild(d);
+    a.appendChild(c);a.appendChild(b);r.appendChild(a);list.appendChild(r)})}
+  function fail(e){st.className='msg err';st.textContent='No se pudo guardar: '+(e&&e.message?e.message:'error');save.disabled=false}
+  function row(l){return {titulo:l.titulo,url:l.url,icono:l.icono,orden:l.orden,destacado:!!l.destacado,visible:!!l.visible,badge:l.badge}}
+  var add=ab('Añadir enlace','Añadir enlace',function(){draft.push({titulo:'Nuevo enlace',url:'https://',icono:'',orden:0,destacado:false,visible:true,badge:''});draw();list.lastChild.querySelector('input').focus()});
+  save=ab('Guardar','Guardar cambios',async function(){
+    var i,l,keep=[],r;
+    for(i=0;i<draft.length;i++){l=draft[i];l.titulo=String(l.titulo||'').trim();l.url=String(l.url||'').trim();l.icono=String(l.icono||'').trim();l.badge=String(l.badge||'').trim();
+      if(!l.titulo){st.className='msg err';st.textContent='Cada enlace necesita un título.';return}
+      if(l.url!=='#'&&!isHttps(l.url)){st.className='msg err';st.textContent='La URL de «'+l.titulo+'» debe empezar por https://';return}
+      l.orden=i+1;if(l.id)keep.push(l.id)}
+    save.disabled=true;st.className='msg';st.textContent='Guardando…';
+    var del=orig.filter(function(o){return keep.indexOf(o.id)<0}).map(function(o){return o.id});
+    if(del.length){r=await sb.from('laura_links').delete().in('id',del);if(r.error)return fail(r.error)}
+    var ex=draft.filter(function(l){return l.id}).map(function(l){var o=row(l);o.id=l.id;return o});
+    if(ex.length){r=await sb.from('laura_links').upsert(ex);if(r.error)return fail(r.error)}
+    var nw=draft.filter(function(l){return !l.id}).map(row);
+    if(nw.length){r=await sb.from('laura_links').insert(nw);if(r.error)return fail(r.error)}
+    panel(true);
+  },'pri');
+  var view=mk('a','ab','Ver página');view.href='/';
+  foot.appendChild(add);foot.appendChild(save);foot.appendChild(view);foot.appendChild(ab('Salir','Cerrar sesión',out));
+  app.appendChild(list);app.appendChild(foot);app.appendChild(st);draw();
+}
+
+init();
+})();
+</script>
+</body>
+</html>
